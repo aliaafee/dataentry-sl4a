@@ -300,6 +300,7 @@ if __name__ == '__main__':
 	droid = android.Android()
 
 	dbfile = "/sdcard/sl4a/DataEntry.db"
+
 	schema = [
 		('patientid',	'INTINDX',	'PatientId'),
 		('ipnumber',	'INT',	'IpNumber'),
@@ -307,9 +308,7 @@ if __name__ == '__main__':
 		('sex',	'SEL',	'Sex', {'m' : 'Male', 'f' : 'Female'}),
 		('age',	'INT',	'Age'),
 		('admittedDate',	'DATE',	'Admitted Date'),
-		('admittedTime',	'TIME',	'Admitted Time'),
-		('DischargedDate',	'DATE',	'Discharged Date'),
-		('hb',	'REAL',	'Hemoglobin(mg/dl)')
+		('DischargedDate',	'DATE',	'Discharged Date')
 	]
 	
 	try:
