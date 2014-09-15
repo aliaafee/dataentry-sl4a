@@ -89,6 +89,11 @@
 		text-decoration: none;
 	}
 
+	#form image {
+		width: 100px;
+		height: 100px;
+	}
+
 	#list table {
 		margin:0;
 		width: 100%;
@@ -133,9 +138,17 @@
 		});
 		droid.registerCallback('status', function(e) {
 			document.getElementById("status").innerHTML = e.data;
-			alert(e.data);
 		})
-
+		droid.registerCallback('setinput', function(e) {
+			odata = JSON.parse(e.data);
+			document.getElementById(odata['inputid']).value = odata['value'];
+		})
+		droid.registerCallback('imagePickerCallback', function(e) {
+			odata = JSON.parse(e.data);
+			alert(e.data)
+			document.getElementById(odata['inputid']).value = odata['filename'];
+			document.getElementById(odata['inputid']+".image").src = odata['filename'];
+		})
 		droid.eventPost('load', '');
 	}
 
@@ -155,6 +168,10 @@
 		var odata = JSON.parse(data);
 		for (var i = 0; i <  elem.length; i++) {
 			elem[i].value = odata[elem[i].name];
+			if (elem[i].type == 'url') {
+				var image = elem[i].id + ".image";
+				document.getElementById(image).src = odata[elem[i].name];
+			}
 		}
 	}
 
@@ -162,6 +179,10 @@
 		var elem = document.getElementById(formName).elements;
 		for (var i = 0; i <  elem.length; i++) {
 			elem[i].value = '';
+			if (elem[i].type == 'url') {
+				var image = elem[i].id + ".image";
+				document.getElementById(image).src = "";
+			}
 		}
 	}
 
@@ -191,7 +212,9 @@
 		droid.eventPost('list', filter);
 	}
 
-
+	function imagePicker(inputid) {
+		droid.eventPost('imagePicker', inputid)
+	}
 </script>
 
 </head>
@@ -262,3 +285,4 @@
 
 
 </html>
+

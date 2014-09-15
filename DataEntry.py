@@ -1,6 +1,7 @@
-import android
+#import android
 import sqlite3
 import json
+import os.path
 
 
 class DataBase:
@@ -27,6 +28,8 @@ class DataBase:
 				query += " "
 				if col[1] == "INTINDX":
 					query += "INTEGER PRIMARY KEY"
+				elif col[1] == "INT":
+					query += "INTEGER"
 				elif col[1] == "REAL":
 					query += "REAL"
 				elif col[1] == "DATE":
@@ -148,12 +151,26 @@ class DataBase:
 
 
 class DataEntry:
-	def __init__(self, droid, schema, dbfile):
+	def __init__(self, droid, schemafile, dbfile, imageStore):
 		self.title = "Data Entry"
 		self.droid = droid
 
-		self.db = DataBase(dbfile, schema)
+		self.schema = self.loadSchema(schemafile)
+		print self.schema
+
+		self.db = DataBase(dbfile, self.schema)
 		self.schema = schema
+
+		self.imageStore = imageStore
+
+
+	def loadSchema(self, schemafile):
+		schemastr = ""
+		with open(schemafile) as f:
+			schemastr = f.read()
+		schema = json.loads(schemastr)
+
+		return schema
 
 
 	def start(self):
@@ -174,6 +191,8 @@ class DataEntry:
 				self.updatePatient(event['data'])
 			elif event['name'] == 'list':
 				self.listPatients(event['data'])
+			elif event['name'] == 'imagePicker':
+				self.imagePicker(event['data'])
 			elif event['name'] == 'exit':
 				self.exit()
 
@@ -184,9 +203,21 @@ class DataEntry:
 
 	def alert(self, title, message):
 		self.status(message)
-		droid.dialogCreateAlert(title, message)
-		droid.dialogSetPositiveButtonText('Ok')
-		droid.dialogShow()
+		self.droid.dialogCreateAlert(title, message)
+		self.droid.dialogSetPositiveButtonText('Ok')
+		self.droid.dialogShow()
+
+
+	def uniqueImageFileName(self):
+		return "asd.jpg"
+
+
+	def imagePicker(self, inputid):
+		filename = os.path.join(self.imageStore, self.uniqueImageFileName())
+		self.droid.cameraInteractiveCapturePicture(filename)
+
+		data = { 'inputid': inputid, 'filename': filename }
+		self.droid.eventPost('imagePickerCallback', json.dumps(data))
 
 
 	def addPatient(self, datastr):
@@ -215,12 +246,6 @@ class DataEntry:
 
 
 	def viewPatientByIp(self, ipnumber):
-		'''
-		data = ''
-		for patientid, patient in self.patients.iteritems():
-			if patient['ipnumber'] == ipnumber:
-				data = patient
-		'''
 		data = self.db.get('ipnumber', ipnumber)
 
 		if data != False:
@@ -241,16 +266,16 @@ class DataEntry:
 	def listPatients(self, filter):
 		rows = self.db.list('patientid, ipnumber, name, age, sex', filter)
 
-		html = "<table>"
-		html += "<thead><tr><td>#</td><td>IP</td><td>Name</td><td>Age</td><td>Sex</td></tr></thead>"
-		html += "<tbody>"
+		html = u"<table>"
+		html += u"<thead><tr><td>#</td><td>IP</td><td>Name</td><td>Age</td><td>Sex</td></tr></thead>"
+		html += u"<tbody>"
 		if rows != False:
 			for row in rows:
-				html += '<tr onClick="droid.eventPost(\'viewbyid\', \'{0}\')"><td><a href="javascript:droid.eventPost(\'viewbyid\', \'{0}\')">{0}</a></td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>'.format(row[0], row[1], row[2], row[3], row[4])
+				html += u'<tr onClick="droid.eventPost(\'viewbyid\', \'{0}\')"><td><a href="javascript:droid.eventPost(\'viewbyid\', \'{0}\')">{0}</a></td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>'.format(row[0], row[1], row[2], row[3], row[4])
 		else:
 			self.status('Non found')
-		html += "</tbody>"
-		html += "</table>"
+		html += u"</tbody>"
+		html += u"</table>"
 		self.droid.eventPost('setList', html)
 
 
@@ -262,28 +287,31 @@ class DataEntry:
 		return form
 
 
-	def generateInput(self, col, value='', disabled=False):
-		if disabled:
-			disabled = 'disabled'
-		else:
-			disbaled = ''
+	def generateInput(self, col):
 		form = '<tr>'
 		form += '<td><label for="{0}">{1}</label><td>'.format(col[0], col[2])
 		form += '<td>'
 		if col[1] == 'SEL':
 			selList = ''
 			for selvalue, sellabel in col[3].iteritems():
-				if value == selvalue:
-					selList += '<option value={0} selected="selected">{1}</option>'.format(selvalue, sellabel)
-				else:
-					selList += '<option value={0}>{1}</option>'.format(selvalue, sellabel)
-			form += '<select name="{0}"/ >{1}</select>'.format(col[0], selList)
+				selList += '<option value="{0}">{1}</option>'.format(selvalue, sellabel)
+			form += '<select id="{0}" name="{0}"/ >{1}</select>'.format(col[0], selList)
 		elif col[1] == 'INTINDX':
-			form += '<input name="{0}" type="text" value="{0}" disabled />'.format(col[0])
-		elif col[2] == 'DATE':
-			form += '<input name="{0}" type="date" value="{0}"/>'.format(col[0])
+			form += '<input id="{0}" name="{0}" type="text" disabled />'.format(col[0])
+		elif col[1] == 'DATE':
+			form += '<input id="{0}" name="{0}" type="date" />'.format(col[0])
+		elif col[1] == 'TIME':
+			form += '<input id="{0}" name="{0}" type="time" />'.format(col[0])
+		elif col[1] == 'IMG':
+			form += '<input id="{0}" name="{0}" type="url" style="display: none;" />'.format(col[0])
+			form += '<image id="{0}.image" src="" width="100px" height="100px" onClick="viewImage(\'{0}\')"  />'.format(col[0])
+			form += '<a href="javascript:imagePicker(\'{0}\')" >Edit</a>'.format(col[0])
+
+
+		elif col[1] == 'INT':
+			form += '<input id="{0}" name="{0}" type="number" />'.format(col[0])
 		else:
-			form += '<input name="{0}" type="text" value="{0}"/>'.format(col[0])
+			form += '<input id="{0}" name="{0}" type="text" />'.format(col[0])
 		form += '</td>'
 		form += '</tr>'
 		return form
@@ -299,7 +327,11 @@ class DataEntry:
 if __name__ == '__main__':
 	droid = android.Android()
 
-	dbfile = "/sdcard/sl4a/DataEntry.db"
+	dbfile = "/sdcard/sl4a/data/DataEntry.db"
+
+	schemafile = "/sdcard/sl4a/data/dataentry.dbschema"
+
+	imageStore = "/sdcard/sl4a/data/images/"
 
 	schema = [
 		('patientid',	'INTINDX',	'PatientId'),
@@ -307,12 +339,15 @@ if __name__ == '__main__':
 		('name',	'STR',	'Name'),
 		('sex',	'SEL',	'Sex', {'m' : 'Male', 'f' : 'Female'}),
 		('age',	'INT',	'Age'),
-		('admittedDate',	'DATE',	'Admitted Date'),
-		('DischargedDate',	'DATE',	'Discharged Date')
+		('admitteddate',	'DATE',	'Admitted Date'),
+		('admittedtime',	'TIME', 'Admitted Time'),
+		('dischargeddate',	'DATE',	'Discharged Date'),
+		('hb',	'REAL',	'Hemoglobin (mg/dl)'),
+		('cxr',	'IMG',	'Chest X-ray')
 	]
 	
 	try:
-		main = DataEntry(droid, schema, dbfile)
+		main = DataEntry(droid, schemafile, dbfile, imageStore)
 		main.start()
 	except sqlite3.InterfaceError:
 		main.alert('Error', 'Database interface error')
