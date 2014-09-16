@@ -1,4 +1,4 @@
-#import android
+import android
 import sqlite3
 import json
 import os.path
@@ -151,30 +151,43 @@ class DataBase:
 
 
 class DataEntry:
-	def __init__(self, droid, schemafile, dbfile, imageStore):
+	def __init__(self, droid, settingsfile):
+		self.settings = self.loadSettings(settingsfile)
+
 		self.title = "Data Entry"
 		self.droid = droid
 
-		self.schema = self.loadSchema(schemafile)
-		print self.schema
+		if self.settings == False:
+			self.alert('Error', 'Error loading settings from "{0}"'.format(settingsfile))
+			
+		self.schema = self.settings['schema']
 
-		self.db = DataBase(dbfile, self.schema)
-		self.schema = schema
+		self.db = DataBase(self.settings['dbfile'], self.schema)
 
-		self.imageStore = imageStore
+		self.imageStore = self.settings['imagestore']
 
 
-	def loadSchema(self, schemafile):
-		schemastr = ""
-		with open(schemafile) as f:
-			schemastr = f.read()
-		schema = json.loads(schemastr)
+	def loadSettings(self, settingsfile):
+		settingstr = ""
+		try:
+			with open(settingsfile) as f:
+				settingstr = f.read()
+			print settingstr
+			settings = json.loads(settingstr)
+		except IOError:
+			print 'Settings file not found at {0}'.format(settingsfile)
+			return False
 
-		return schema
+		if 'dbfile' in settings and 'imagestore' in settings and 'schema' in settings:
+			if len(settings['schema']) > 0:
+				return settings
+
+		print 'Settings format wrong in {0}'.format(settingsfile)
+		return False
 
 
 	def start(self):
-		self.droid.webViewShow('file:///sdcard/sl4a/res/DateEntryUI.html')
+		self.droid.webViewShow('file:///sdcard/sl4a/res/dataentry-ui.html')
 
 		while True:
 			event = self.droid.eventWait().result
@@ -327,27 +340,11 @@ class DataEntry:
 if __name__ == '__main__':
 	droid = android.Android()
 
-	dbfile = "/sdcard/sl4a/data/DataEntry.db"
+	settingsfile = '/sdcard/sl4a/res/dataentry.settings'
 
-	schemafile = "/sdcard/sl4a/data/dataentry.dbschema"
+	main = DataEntry(droid, settingsfile)
 
-	imageStore = "/sdcard/sl4a/data/images/"
-
-	schema = [
-		('patientid',	'INTINDX',	'PatientId'),
-		('ipnumber',	'INT',	'IpNumber'),
-		('name',	'STR',	'Name'),
-		('sex',	'SEL',	'Sex', {'m' : 'Male', 'f' : 'Female'}),
-		('age',	'INT',	'Age'),
-		('admitteddate',	'DATE',	'Admitted Date'),
-		('admittedtime',	'TIME', 'Admitted Time'),
-		('dischargeddate',	'DATE',	'Discharged Date'),
-		('hb',	'REAL',	'Hemoglobin (mg/dl)'),
-		('cxr',	'IMG',	'Chest X-ray')
-	]
-	
 	try:
-		main = DataEntry(droid, schemafile, dbfile, imageStore)
 		main.start()
 	except sqlite3.InterfaceError:
 		main.alert('Error', 'Database interface error')

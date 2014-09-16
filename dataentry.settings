@@ -1,0 +1,17 @@
+{
+	"dbfile": "/sdcard/sl4a/data/dataentry.db",
+	"imagestore": "/sdcard/sl4a/data/images/", 
+	"schema": [
+		["patientid", "INTINDX", "PatientId"], 
+		["ipnumber", "INT", "IpNumber"], 
+		["name", "STR", "Name"], 
+		["sex", "SEL", "Sex", {"m": "Male", "f": "Female"}], 
+		["age", "INT", "Age"], 
+		["admitteddate", "DATE", "Admitted Date"], 
+		["admittedtime", "TIME", "Admitted Time"], 
+		["dischargeddate", "DATE", "Discharged Date"], 
+		["hb", "REAL", "Hemoglobin (mg/dl)"], 
+		["tc", "INT", "TC  (/cmm)"], 
+		["cxr", "IMG", "Chest X-ray"]
+	]
+}
