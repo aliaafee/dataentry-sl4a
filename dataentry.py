@@ -360,9 +360,9 @@ class DataEntry:
 			form += '<input id="{0}" name="{0}" type="url" style="display: none;" />'.format(col[0])
 			form += '<image id="{0}.image" src="" width="100px" height="100px" onClick="viewImage(\'{0}\')"  />'.format(col[0])
 			form += '<a href="javascript:imagePicker(\'{0}\')" >Edit</a>'.format(col[0])
-
-
 		elif col[1] == 'INT':
+			form += '<input id="{0}" name="{0}" type="number" />'.format(col[0])
+		elif col[1] == 'REAL':
 			form += '<input id="{0}" name="{0}" type="number" />'.format(col[0])
 		else:
 			form += '<input id="{0}" name="{0}" type="text" />'.format(col[0])
