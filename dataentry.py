@@ -68,6 +68,16 @@ class DataBase:
 		self.uquery = "UPDATE data SET {0} WHERE {1}=:{1}".format(uqvalues, '{0}')
 		self.squery = "SELECT {0} FROM data WHERE {1}=:{1}".format(sqcols, '{0}')
 
+		result, = self.db.execute(
+			"SELECT COUNT() FROM sqlite_master WHERE type='table' AND name='uniquecounter';").fetchone()
+
+		if result == 0:
+			query = "CREATE TABLE IF NOT EXISTS uniquecounter (id INTEGER PRIMARY KEY, counter INTEGER)"
+			self.db.execute(query)
+			query = "INSERT INTO  uniquecounter(counter) VALUES(1)"
+			self.db.execute(query)
+			self.db.commit()
+
 
 	def add(self, data):
 		datai = {}
@@ -115,6 +125,8 @@ class DataBase:
 		except sqlite3.DatabaseError:
 			self.db.rollback()
 
+			return False
+
 
 	def get(self, col, filter):
 		query = self.squery.format(col)
@@ -148,6 +160,25 @@ class DataBase:
 		return rows
 
 
+	def getuniqueid(self):
+		counter, = self.db.execute('SELECT counter FROM uniquecounter WHERE id = 1').fetchone()
+
+		uniqueid = counter
+
+		counter += 1
+
+		try:
+			result = self.db.execute("UPDATE uniquecounter SET counter={0} WHERE id=1".format(counter))
+			
+			self.db.commit()
+
+			return uniqueid
+		except sqlite3.DatabaseError:
+			self.db.rollback()
+
+			return False
+
+		
 
 
 class DataEntry:
@@ -172,7 +203,6 @@ class DataEntry:
 		try:
 			with open(settingsfile) as f:
 				settingstr = f.read()
-			print settingstr
 			settings = json.loads(settingstr)
 		except IOError:
 			print 'Settings file not found at {0}'.format(settingsfile)
@@ -222,11 +252,22 @@ class DataEntry:
 
 
 	def uniqueImageFileName(self):
-		return "asd.jpg"
-
+		uniqueid = self.db.getuniqueid()
+		
+		if uniqueid == False:
+			return False
+		
+		return "{0}.jpg".format(uniqueid)
+		
 
 	def imagePicker(self, inputid):
-		filename = os.path.join(self.imageStore, self.uniqueImageFileName())
+		filename = self.uniqueImageFileName()
+		
+		if filename == False:
+			self.alert('Error', 'Could not get a unique filename')
+			return
+
+		filename = os.path.join(self.imageStore, filename)
 		self.droid.cameraInteractiveCapturePicture(filename)
 
 		data = { 'inputid': inputid, 'filename': filename }
@@ -343,7 +384,8 @@ if __name__ == '__main__':
 	settingsfile = '/sdcard/sl4a/res/dataentry.settings'
 
 	main = DataEntry(droid, settingsfile)
-
+	main.start()
+	'''
 	try:
 		main.start()
 	except sqlite3.InterfaceError:
@@ -352,3 +394,4 @@ if __name__ == '__main__':
 		main.lert('Error', 'Database error')
 	finally:
 		main.exit()
+	'''
