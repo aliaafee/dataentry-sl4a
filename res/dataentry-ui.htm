@@ -1,0 +1,289 @@
+<html>
+
+<head>
+
+<meta name="viewport" content="width=device-width,
+            initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+
+<style type="text/css">
+	body {
+		margin: 0;
+		padding: 0;
+	}
+
+	#header {
+		position: fixed;
+		width: 100%;
+		top: 0px;
+	}
+
+	#title {
+		display: block;
+		background-color: silver;
+		font-size: 110%;
+		font-weight: bold;
+		text-align: center;
+		padding: 5px;
+	}
+
+	#navbar {
+		display: block;
+		height: 34px;
+		background-color: Gray;
+	}
+
+	#navbar ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	#navbar li {
+		position: relative; 
+		float: left;
+	}
+
+	#navbar li button {
+		_width: 60px;
+		_overflow: hidden;
+		padding: 5px;
+		display: block;
+		font-weight: normal;
+		text-decoration: none;
+	}
+
+	#navbar li.right {
+		float: right;
+	}
+
+	#status {
+		display: block;
+		background-color: silver;
+		font-size: 75%;
+		text-align: right;
+		padding: 5px;
+	}
+
+	div.page {
+		margin:89px auto;
+		display: none;
+	}
+
+	#form table {
+		width: 100%;
+	}
+
+	#form select {
+		width: 100%;
+	}
+
+	#form input {
+		width: 100%;
+	}
+
+	#form button {
+		width: 100%;
+		padding: 5px;
+		display: block;
+		font-weight: normal;
+		text-decoration: none;
+	}
+
+	#form image {
+		width: 100px;
+		height: 100px;
+	}
+
+	#list table {
+		margin:0;
+		width: 100%;
+		border-spacing: 0;
+	}
+
+	#lisr table td {
+		margin : 0;
+	}
+
+	#list thead tr {
+		font-weight: bold;
+	}
+
+	#list tbody tr:nth-child(even) {
+		background-color: #fff;
+	}
+
+	#list tbody tr:nth-child(odd) {
+		background-color: #eee;
+	}
+
+</style>
+
+<script type="text/javascript">
+	var droid = new Android();
+
+	function load() {
+		droid.registerCallback('setForm', function(e) { 
+			document.getElementById("main").innerHTML = e.data;
+		});
+		droid.registerCallback('setList', function(e) { 
+			document.getElementById("list").innerHTML = e.data;
+			showPage('list');
+		});
+		droid.registerCallback('loadFormData', function(e) {
+			clearFormData('main');
+			loadFormData('main', e.data);
+			document.getElementById('addButton').style.display = 'none';
+			document.getElementById('updateButton').style.display = 'block';
+			showPage('form');
+		});
+		droid.registerCallback('status', function(e) {
+			document.getElementById("status").innerHTML = e.data;
+		})
+		droid.registerCallback('setinput', function(e) {
+			odata = JSON.parse(e.data);
+			document.getElementById(odata['inputid']).value = odata['value'];
+		})
+		droid.registerCallback('imagePickerCallback', function(e) {
+			odata = JSON.parse(e.data);
+			alert(e.data)
+			document.getElementById(odata['inputid']).value = odata['filename'];
+			document.getElementById(odata['inputid']+".image").src = odata['filename'];
+		})
+		droid.eventPost('load', '');
+	}
+
+	function getFormData(formName) {
+		var elem = document.getElementById(formName).elements;
+		
+		var data = {};
+		for (var i = 0; i <  elem.length; i++) {
+			data[elem[i].name] = elem[i].value;
+		}
+
+		return JSON.stringify(data);
+	}
+
+	function loadFormData(formName, data) {
+		var elem = document.getElementById(formName).elements;
+		var odata = JSON.parse(data);
+		for (var i = 0; i <  elem.length; i++) {
+			elem[i].value = odata[elem[i].name];
+			if (elem[i].type == 'url') {
+				var image = elem[i].id + ".image";
+				document.getElementById(image).src = odata[elem[i].name];
+			}
+		}
+	}
+
+	function clearFormData(formName) {
+		var elem = document.getElementById(formName).elements;
+		for (var i = 0; i <  elem.length; i++) {
+			elem[i].value = '';
+			if (elem[i].type == 'url') {
+				var image = elem[i].id + ".image";
+				document.getElementById(image).src = "";
+			}
+		}
+	}
+
+	function viewPatientByIp(ipnumber) {
+		droid.eventPost('viewbyip',ipnumber);
+	}
+
+	function showPage(page) {
+		document.getElementById('form').style.display = 'none';
+		document.getElementById('search').style.display = 'none';
+		document.getElementById('list').style.display = 'none';
+		document.getElementById(page).style.display = 'block';
+		window.scrollTo(0,0);
+	}
+
+	function newPatient() {
+		clearFormData('main');
+		document.getElementById('addButton').style.display = 'block';
+		document.getElementById('updateButton').style.display = 'none';
+		showPage('form');
+	}
+
+	function searchPatient() {
+		showPage('search');
+	}
+
+	function listPatient(filter) {
+		droid.eventPost('list', filter);
+	}
+
+	function imagePicker(inputid) {
+		droid.eventPost('imagePicker', inputid)
+	}
+</script>
+
+</head>
+
+<body onload="load()" >
+
+<div id="header">
+	<div id="title">
+		Data Entry
+	</div>
+
+	<div id="navbar">
+		<ul>
+			<li>
+				<button type="button" onclick="newPatient()">
+					New Patient
+				</button>
+			</li>
+			<li>
+				<button type="button" onclick="searchPatient()">
+					Search
+				</button>
+			</li>
+			<li>
+				<button type="button" onclick="listPatient('')">
+					List
+				</button>
+			</li>
+			<li class="right">
+				<button type="button" onclick="droid.eventPost('exit', '')">
+					Exit
+				</button>
+			</li>
+		</ul>
+	</div>
+
+	<div id="status">
+		&nbsp;
+	</div>
+</div>
+
+<div id="form" class="page">
+	<form id="main">
+		form here
+	</form>
+	<div id="buttons">
+		<button id="addButton" type="button" onclick="droid.eventPost('add', getFormData('main'))">
+			Add Patient
+		</button>
+		<button id="updateButton" type="button" onclick="droid.eventPost('update', getFormData('main'))">
+			Update Patient
+		</button>
+	</div>
+</div>
+
+<div id="search" class="page">
+	Ip Number : <input id="ipnumberfind" type="text" spellcheck="false"/>
+	<button id="view" type="button" onclick="viewPatientByIp(document.getElementById('ipnumberfind').value)">
+		View
+	</button>
+</div>
+
+<div id="list" class="page">
+
+</div>
+
+</body>
+
+
+</html>
+

@@ -1,0 +1,27 @@
+<html>
+
+<body>
+
+	<table>
+		<thead>
+			<tr>
+				% for col in page['headers']:
+					<td>{{col}}</td>
+				% end
+			</tr>
+		</thead>
+		<tbody>
+			% for row in page['rows']:
+				<tr>
+					<td><a href="/patients/{{row[0]}}">{{row[0]}}</a></td>
+					% for i in range(1,len(row)):
+						<td>{{row[i]}}</td>
+					% end
+				</tr>
+			% end
+		</tbody>
+	</table>
+
+</body>
+
+</html>
