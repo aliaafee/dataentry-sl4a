@@ -266,6 +266,21 @@ class DataEntry(Bottle):
         return '<form method="post" action="{0}">{1}<input type="submit" value="Save"></form>'.format(page['action'], page['form'])
 
 
+    def viewPatientByIp(self, ipnumber):
+        page = {}
+        data = self.db.get('ipnumber', ipnumber)
+
+        if data == False:
+            return self.template("error", "Patient with IP Number {0} not found".format(ipnumber))
+
+        patientid = data['patientid']
+
+        page['form'] = self.generateForm(data)
+        page['action'] = "/patients/{0}/update".format(patientid)
+
+        return '<form method="post" action="{0}">{1}<input type="submit" value="Save"></form>'.format(page['action'], page['form'])
+
+
     def newPatientForm(self):
         page = {}
         
@@ -406,6 +421,12 @@ if __name__ == '__main__':
         return app.listPatients("")
 
 
+    @app.post("/search")
+    def search():
+        ipnumber = request.forms.get('ipnumber')
+        return patientip(ipnumber)
+
+
     @app.get("/patients.csv")
     def exportcsv():
         response.set_header("Content_Type", "text/csv")
@@ -439,6 +460,11 @@ if __name__ == '__main__':
     @app.get("/patients/<patientid>")
     def patient(patientid):
         return app.viewPatientById(patientid)
+
+
+    @app.get("/patients/ip/<ipnumber>")
+    def patientip(ipnumber):
+        return app.viewPatientByIp(ipnumber)
 
 
     @app.post("/patients/<patientid>/update")
@@ -486,6 +512,5 @@ if __name__ == '__main__':
     finally:
         main.exit()
     '''
-
 
 
