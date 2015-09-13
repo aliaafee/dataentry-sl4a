@@ -370,6 +370,8 @@ class DataEntry(Bottle):
         for row in rows:
             rowstr = []
             for col in row:
+                if col == None:
+                    col = ""
                 colstr = str(col)
                 colstr = colstr.replace("\"", "\"\"")
                 colstr = "\"{0}\"".format(colstr)
